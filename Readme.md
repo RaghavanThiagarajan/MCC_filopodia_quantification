@@ -32,7 +32,7 @@ In this step, we get the ROIs of the cell boundary and the track coordinates of 
 ### **2. Extracting the ROIs and intensities of cortex and filopodia**
 In this step, we will use the ROI of leading cell edge to obtain the ROIs of cell cortex and filopodia, and their intensities.
 
-* Download the Fiji script `ROI_shiftedROI_meanintensity_extraction_RT_ver_02.ijm`” to the ***test_filopodia_analysis*** folder.
+* Download the Fiji script `ROI_shiftedROI_meanintensity_extraction.ijm`” to the ***test_filopodia_analysis*** folder.
 
 * Drag and drop the script file into Fiji.
 
@@ -56,7 +56,7 @@ In this step, we will use the ROI of leading cell edge to obtain the ROIs of cel
 * A dialog will ask for area selection to estimate the background intensity. Select the "rectangle or oval tool" in Fiji and select / draw a small area in the image where the actual signal (filopodia / cortex / cell boundary) is not present.
 * Click “OK”.
 
-When the .ijm script is finished running, it will generate a folder called ***data***, inside which you will find: 
+When the Fiji script is finished running, it will generate a folder called ***data***, inside which you will find: 
 * ***Image_dimensions_&_input_parameters.csv*** file which stores the image property values and the shift & thickness values that you had entered.
 
 * Two ROI files, one each for cortex and filopodia. Check these ROIs (drag and drop into Fiji) to see if they correspond to the area of filopodia and cortex of the cell. If not, Run the script again with modified values of “shift” and “thickness” for filopodia and cortex. 
@@ -64,7 +64,7 @@ When the .ijm script is finished running, it will generate a folder called ***da
 
 ### **3. Plotting**
 In this step, we will use the data generated from the previous step to make the plots.
-* Download the `TCJ_Cell_contour_plots_RT_ver_04.m` file into the ***test_filopodia_analysis*** folder. 
+* Download the `TCJ_Cell_contour_plots.m` file into the ***test_filopodia_analysis*** folder. 
 * Open the script in MATLAB.
 * Run the script.
 

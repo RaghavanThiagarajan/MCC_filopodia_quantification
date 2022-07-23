@@ -1,16 +1,23 @@
-% Raghavan Thiagarajan, DanStem, Copenhagen, 30th September 2018 - Version-02, 06th July 2020
+% Raghavan Thiagarajan, DanStem, Copenhagen, 30th September 2018 - Version-03, 10th September 2020
 
 % This script obtains different kinds of data and plots them in 2D and 3D.
 % The data obtained are: (1) Coordinates from the track file of Tri-cellular junctions; (2) The
 % ROI coordinates of cell surface contour; (3) Image dimensions and the
 % corresponding (4) Time points (5) Shifted ROI coordinates and their mean intensity.
 
+% In version 03, following updates were done: (1) The filopodia index that cumulative across the cell was split into left and right filopodia index
+% and this was plotted against time and distance between the cell tip and left and right TCJs respectively; (2) In addition to getting the distance
+% between the cell tip and the left/right TCJs, the distance between the cell tip and "top" was obtained. "Top" refers to the line connecting the
+% TCJs. This was to remove the bias coming from x/y movement that lead to increase/decrease w.r.to left/right TCJs; (3) The cumulative filodpodia index was
+% plotted against the difference between the distances of cell tip to left/right TCJs; (4) The ratio of left to right filopodia index and ratio of left to right 
+% TCJ distances were plotted against time.
+
 % In version 02, following updates were done: (1) In those figures where the TCJ trajectories were marked, the trajectories were color coded for
 % the distance between the correpsonding TCJ and cell tip; (2) The intensity of cortex was collected in the adjoining Fiji script; this
 % cortex intensity was imported and used to normalise the filopodia intensity; (3) Therefore figures with and without cortex normalisation
 % were generated for filopodia intensities; Along with this, cortex intensity was also plotted; (3) Other new plots: the mean intensity of filopodia along
 % each contour was averaged and this vaule was plotted against the distance (between TCJ and cell tip); (4) a new index called "filopodia
-% index" was generated as a propxy for the no. of filopodia; the filopodia index is the sum of "area under the curve" above "1" after normalising with cortex;
+% index" was generated as a proxy for the no. of filopodia; the filopodia index is the sum of "area under the curve" above "1" after normalising with cortex;
 % this is further divided by the contour length; this filopdia index was plotted against the distance (between TCJ and cell tip).
 
 clc
@@ -32,8 +39,10 @@ Timevall = Image_dime(1,6); % In sec
 Timeval = Timevall / 60; % Converted to minutes
 
 % Getting Image dimensions - to be used for normalization
-Img_height = Image_dime(1,3);
-Image_height = Img_height * ypixval;
+Image_width_orig = Image_dime(1,2);
+Image_width = Image_width_orig * xpixval;
+Img_height_orig = Image_dime(1,3);
+Image_height = Img_height_orig * ypixval;
 
 % Loading the tracked data from the Tri-cellular junction on the left
 TCJLeft = './TCJ_left.csv'; 
@@ -58,7 +67,6 @@ TCJ_rightx = TCJrightx.*xpixval; TCJ_righty = TCJrighty.*ypixval; % x and y coor
 TCJrighty_normalised = Image_height -  TCJ_righty; % Normalized w.r.to the Image height for proper representation since the XY quadrants are arranged differently in ImageJ
 TCJrighty_normalised_guideforeyes = TCJrighty_normalised / max(TCJrighty_normalised);% this guide for eyes is used in those plots where the intensities are plotted instead of contour;
 % in this case the normalisation allows the TCJ trajectories to be present without the need for the axis to be a "distance" axis
-
 
 % Here the largest "y" coordinate between the left and right TCJ is found.
 % This value is used as limits in some of the plots where the inherent plot limits are smaller than the "y" coordinate of TCJ left / TCJ right; Because of this, 
@@ -133,7 +141,7 @@ Distanceleft = zeros(1, sze); Distanceright = zeros(1, sze); Time = zeros(1,sze)
 TopShiftedROI_meanint_avg = zeros(1,sze); area_under_the_curve = zeros(1,sze);
 for i = 1:sze
     ROIxx = ROI_xymin(i,2); ROIyy = ROI_xymin(i,3);
-    x1 = ROIxx * xpixval; y1 = ROIyy * ypixval;    
+    x1 = ROIxx * xpixval; y1 = ROIyy * ypixval;  % celltipcoord11(i,1) = x1;  celltipcoord11(i,2) = y1;
     
     leftxx = TCJ_left(i,3); leftyy = TCJ_left(i,4);
     x2 = leftxx * xpixval; y2 = leftyy * ypixval;    
@@ -145,6 +153,7 @@ for i = 1:sze
     % tip of each ROI (cell contour)    
     Distanceleft(i) = sqrt(((x2-x1)^2)+((y2-y1)^2)); 
     Distanceright(i) = sqrt(((x3-x1)^2)+((y3-y1)^2)); 
+    ratio_TCJ_distance(i,1) = Distanceleft(i) / Distanceright(i); % ratio in lengths between the cell tip and the TCJs on the left and right
     
     % the most minimal value of Distanceleft and Distanceright and the most maximal value of Distanceleft and Distanceright are obtained; 
     % this is used for specifiying the lower and upper limits of the color bar that indicates the distance colorcoding in the TCJ trajectories
@@ -186,7 +195,7 @@ for i = 1:sze
         CellTip(j,2) = ROIYcoord_normalised(tt,1);
     end
     % Getting the time separately for the cell tip data
-    Tim2=i*Timeval; T2_1=Tim2.*ones(size(CellTip(:,1))); T2_2=Tim2.*ones(size(ROI_Xcoord));
+    Tim2=i*Timeval; T2_1=Tim2.*ones(size(CellTip(:,1))); T2_2=Tim2.*ones(size(ROI_Xcoord)); % Timeplot(i,1) = Tim2;
     
     % 3D plot of the actual cell contour and the tip of cell contour
     figure(1);
@@ -205,7 +214,7 @@ for i = 1:sze
     DownShiftedROIYcoord_normalised = Image_height - DownShiftedROI_Ycoord; % This normalisation is done since in the image, the y coordinates start at the top as zero and increase while going doesn
     % Downshifted contour intensity for cortex
     DownShiftedROI_meanint = ROI_XYcrd(:,7); 
-    DownShiftedROI_meanint_normalised = DownShiftedROI_meanint / max(DownShiftedROI_meanint);
+    DownShiftedROI_meanint_normalised = DownShiftedROI_meanint / max(DownShiftedROI_meanint);    
     
     % Topshifted contour for filopodia
     TopShiftedROI_Xcrd = ROI_XYcrd(:,2); TopShiftedROI_Ycrd = ROI_XYcrd(:,4); 
@@ -222,10 +231,83 @@ for i = 1:sze
     
     % Average of the intensity values of each topshifted contour i.e. averaged filopodia intensity across every contour
     % this value is normalised by the averaged cortex mean intensity of the corresponding contour
-    TopShiftedROI_meanint_avg(1,i) = nanmean(TopShiftedROI_meanint) / nanmean(DownShiftedROI_meanint);
+    TopShiftedROI_meanint_avg(1,i) = nanmean(TopShiftedROI_meanint) / nanmean(DownShiftedROI_meanint);    
     
     % Time values obtained for every contour   
-    T3=Tim2.*ones(size(TopShiftedROI_Xcoord));
+    T3=Tim2.*ones(size(TopShiftedROI_Xcoord));    
+    
+    %-----------------------------------------------------%---------------------------------------------------------%
+    % start of "finding the distance between the cell tip and top"
+    % here "top" indicates the line connecting the ends of the image across width, where the line passes through the two TCJ. In order to draw the line between the two TCJ, the x-coordinates of the two TCJ are taken
+    % and they are linearly interpolated using "linspace". The same is done for y-coordinates. In order to extend the lines to the ends of images: for the left end of the image - x-coorindate is taken as zero and the
+    % y-coordinate of left TCJ is taken; similarly for the right end of the image, the x-coordinate is taken as the last pixel of the image in "x" or the "image_width" and the y-coordinate of right TCJ is taken. Then linear
+    % inrepolation is done between coordinates at the three sections: (1) at x=0 and left TCJ; (2) coordinates at left TCJ and right TCJ; (3) and right TCJ and coordinates at "x=image_width". To do this interpolation, the
+    % number of points between each of these coordinates (or the spacing between any two points) is obtained in the "pix_incre_..." variable. This is computed separately for each section. This spacing will match the
+    % spacing in the coordinates of the contour.
+    pix_incre_start = x2/xpixval;
+    pix_incre_mid = (x3/xpixval) - pix_incre_start;
+    pix_incre_end = (Image_width/xpixval) - (pix_incre_start + pix_incre_mid);
+    % then the line is drawn for all these sections by interpolation and based
+    % on the spacing obtained above.
+    xstart = linspace(1, x2, pix_incre_start);
+    xmid = linspace(x2, x3, pix_incre_mid);
+    xend = linspace(x3, Image_width, pix_incre_end);
+    % Then these sections are combined
+    xwhole = [xstart, xmid, xend];
+    xwhole1 = floor(xwhole);
+    % y-coordinates are obtained in the same manner
+    ystart = y2 * ones(size(xstart));
+    ymid = linspace(y2, y3, pix_incre_mid);
+    yend = y3 * ones(size(xend));
+    ywhole = [ystart, ymid, yend];
+    ywhole1 = floor(ywhole);
+    % at this point, we have the x and y coordinates of line connecting the image width that passes through the left and right TCJ
+    % Now we take the celltip coordinates "(x1,y1)" and find the corresponding coordinates in this line
+    idxsearch = find(xwhole1 == floor(x1));
+    idxsearch_center_index = ceil(length(idxsearch)/2);
+    idxsearch_center = idxsearch(idxsearch_center_index);
+    top_x = xwhole(idxsearch_center);
+    top_y = ywhole(idxsearch_center);
+    % now we find the distance between the cell tip and the top
+    celltip_top_distance(i,1) = sqrt((top_x - x1)^2 + (top_y - y1)^2);
+    % end of "finding the distance between the cell tip and top"
+    %-----------------------------------------------------%---------------------------------------------------------%
+    
+    %-----------------------------------------------------%---------------------------------------------------------%
+    % Start of Getting the data for left - right plot
+    % This is part of plotting the index of left and right filopodia index separately. For this, first we are splitting the ROI coordinates into left and right; In order to do this, the index of the midpoint 
+    % (tip of the contour) of ROIcoordinate arrays i.e. (ROI_Xcrd & ROI_Ycrd) are used. Index of the elements starting from the first element to midpoint is taken as left and index of elements from after the midpoint until
+    % the end of the array is taken as right. 
+    celltip_center = ceil(length(Maxindex)/2);
+    celltip_center_idx = Maxindex(celltip_center); 
+    ROI_Xcoord_min = min(ROI_Xcoord); ROI_Xcoord_max = max(ROI_Xcoord);
+    ROI_Xcoord_min_idx_list = find(ROI_Xcoord==ROI_Xcoord_min); ROI_Xcoord_max_idx_list = find(ROI_Xcoord==ROI_Xcoord_max);
+    % At this point, "ROI_Xcoord_min_idx_list" and "ROI_Xcoord_max_idx_list" contain the list of indices corresponding to elements that are "min" and "max" of "ROI_Xcoord". A list is
+    % stored here if there are more than one "min" and "max". Otherwise there is only one element. In case there are more than one item, then we need to find the "minimum" and "maximum" of the list depeneding on
+    % how the user has drawn the ROI. -- The ROI coordinates, while obtained from the ROI in the FIJI script, are stored in the same order as the user has drawn it. For example, for a ROI starting from
+    % x-coordinate 1 until x-coordinate 10, if the user draws it from left to right, then the x-coordinate list is stored as 1 to 10; if the user draws it from right to left then the x-coordinate list is stored as
+    % 10 to 1.-- Then in those plots where the x-coordinates are plotted with directionality, the plot is going to look different depending on which the direction the user has drawn the ROI. This is the case while
+    % plotting the left and right of filopodia index. If the user has drawn the ROI from left to right, the left filopodia index plot will contain the smaller / starting x-coordinates - and this is the proper direction i.e. the x
+    % axis increases from left to right. Whereas if the user has drawn the ROI from right to left, then the left filopodia index plot will contain the larger / ending x-coordinates and the right plot will contain the smaller / 
+    % starting x-coordinates - this is the opposite direction. Therefore the following "if loop" is used to make sure we always plot the smaller / starting x-coordinates in the left plot and the larger / ending x-coordinates in the right plot. 
+    if max(ROI_Xcoord_min_idx_list) < min(ROI_Xcoord_max_idx_list) % normal - left to right direction
+        ROI_Xcoord_min_idx = min(ROI_Xcoord_min_idx_list);
+        ROI_Xcoord_max_idx = max(ROI_Xcoord_max_idx_list);    
+        incre = 1;        
+    else                % reverse - right to left direction
+        ROI_Xcoord_min_idx = max(ROI_Xcoord_min_idx_list);
+        ROI_Xcoord_max_idx = min(ROI_Xcoord_max_idx_list);
+        incre = -1;        
+    end      
+    % Based on these indices, the filopodia mean intensities are split into left and right.
+    TopShiftedROI_meanint_cortexnormalised_left = TopShiftedROI_meanint_cortexnormalised(ROI_Xcoord_min_idx:incre:celltip_center_idx, 1);
+    TopShiftedROI_meanint_cortexnormalised_right = TopShiftedROI_meanint_cortexnormalised(celltip_center_idx+1:incre:ROI_Xcoord_max_idx, 1);
+%     TopShiftedROI_Xcoord_left = TopShiftedROI_Xcoord(ROI_Xcoord_min_idx:incre:celltip_center_idx, 1);
+%     TopShiftedROI_Xcoord_right = TopShiftedROI_Xcoord(celltip_center_idx+1:incre:ROI_Xcoord_max_idx, 1);
+    T3_left = Tim2.*ones(size(TopShiftedROI_meanint_cortexnormalised_left));
+    T3_right = Tim2.*ones(size(TopShiftedROI_meanint_cortexnormalised_right));
+    % End of Getting the data for left - right plot
+    %-----------------------------------------------------%---------------------------------------------------------%
     
     % 3D plot of topshifted contour where the contour is color coded for filopodia mean intensity
     % axis handle for this figure has been created already with the color map: mymap_1
@@ -264,9 +346,27 @@ for i = 1:sze
     figure(6); 
     plot3(TopShiftedROI_Xcoord, T3, TopShiftedROI_meanint_cortexnormalised);
     % from this plot, the sum of "area under the curve", above the values of "1" are obtained 
-    area_under_the_curve(1,i) = sum(TopShiftedROI_meanint_cortexnormalised(TopShiftedROI_meanint_cortexnormalised>1)); % area under the curve
+    area_under_the_curve(1,i) = sum(TopShiftedROI_meanint_cortexnormalised(TopShiftedROI_meanint_cortexnormalised > 1)); % area under the curve
     patch([TopShiftedROI_Xcoord' nan], [T3' nan], [TopShiftedROI_meanint_cortexnormalised' nan], [filopodia_int_marking' nan], 'EdgeColor', 'interp');
     hold on
+    
+    % Figures(66) & (67) is only for obtaining the sum of "area under the curve" for left and right filopodia index and not for plotting
+    figure(66);
+    plot(T3_left, TopShiftedROI_meanint_cortexnormalised_left);
+    area_under_the_curve_left(1,i) = sum(TopShiftedROI_meanint_cortexnormalised_left(TopShiftedROI_meanint_cortexnormalised_left > 1));
+    hold on
+    close (figure(66));
+    figure(67);
+    plot(T3_right, TopShiftedROI_meanint_cortexnormalised_right);
+    area_under_the_curve_right(1,i) = sum(TopShiftedROI_meanint_cortexnormalised_right(TopShiftedROI_meanint_cortexnormalised_right > 1)); 
+    hold on
+    close (figure(67));
+    
+%     figure(68)
+%     plot([x1,top_x],[y1, top_y]);  
+%     xlim([0 Image_width]); ylim([0 Image_height]);
+%     hold on
+    
     
 end
 
@@ -313,7 +413,7 @@ for i = 1:6
         Link = linkprop([figaxes(i), figaxesTCJleft, figaxesTCJright],{'CameraUpVector', 'CameraPosition', 'CameraTarget', 'XLim', 'YLim', 'ZLim'});
         setappdata(gcf, 'StoreTheLink', Link);        
                
-    else  % plots show intensities without the contour       
+    else  % plots showing only intensities without the contour       
         figure(i);
         
         % plotting TCJleft trajectory
@@ -383,27 +483,28 @@ hold on
 plot (Time, Distanceright, '-or'); 
 xlabel('Time [min]', 'FontSize', 18);  ylabel('Distance [\mum]', 'FontSize', 18);
 legend({'TCJ left','TCJ right'},'FontSize',18,'TextColor','black')
-title('Distance between TCJ and cell surface', 'FontSize', 18);
+title('Distance between TCJ and cell tip', 'FontSize', 12);
 saveas(gca, fullfile(folder_save,'Distance_between_TCJ_and_cell_surface'), 'fig'); 
 
 % 2D plot of the distance between the left and right tri-cellular junctions
 figure(8);
 plot (Time, DistanceTCJ, '-ob'); 
 xlabel('Time [min]', 'FontSize', 18);  ylabel('Distance [\mum]', 'FontSize', 18);
-title('Distance between TCJs', 'FontSize', 18);
+title('Distance between TCJs', 'FontSize', 12);
 saveas(gca, fullfile(folder_save,'Distance_between_TCJ'), 'fig');
 
 % 2D plot of the average of filopodia intensity along the contour against the distance between the cell tip and TCJ
 figure(9);
 % the average of filopodia contour intensity is normalised if needed
 % TopShiftedROI_meanint_avg_norm = TopShiftedROI_meanint_avg / max(TopShiftedROI_meanint_avg);
-scatter (Distanceleft, TopShiftedROI_meanint_avg, 'bo'); 
+plot (Distanceleft, TopShiftedROI_meanint_avg, 'bo'); 
 hold on 
-scatter (Distanceright, TopShiftedROI_meanint_avg, 'ro'); 
+plot (Distanceright, TopShiftedROI_meanint_avg, 'ro'); 
 xlim([0 max_distance+1]); % max limit is fixed by the max of maximal distance of TCJleft and TCJright
 set(gca, 'XDir', 'reverse');
 xlabel('Distance [\mum]', 'FontSize', 18);  ylabel('Filopodia mean intensity [a.u]', 'FontSize', 18);
-title('Change in filopodia mean intensity during intercalation', 'FontSize', 18);
+legend({'Distance from cell tip to left TCJ','Distance from cell tip to right TCJ'},'FontSize',18,'TextColor','black')
+title('Change in filopodia mean intensity during intercalation', 'FontSize', 12);
 saveas(gca, fullfile(folder_save,'Filopodia_intensity_during_intercalation'), 'fig');
 
 %2D plot of the filopodia index (sum of the area under the curve) against the distance between the cell tip and TCJ
@@ -412,14 +513,76 @@ figure(10);
 area_under_the_curve_div_by_contour = area_under_the_curve ./ contour_length;
 % sum of the area under the curve is further normalised if needed
 % area_under_the_curve_div_by_contour = area_under_the_curve_div_by_contour / max(area_under_the_curve_div_by_contour);
-scatter (Distanceleft, area_under_the_curve_div_by_contour, 'bo'); 
+plot (Distanceleft, area_under_the_curve_div_by_contour, 'bo'); 
 hold on 
-scatter (Distanceright, area_under_the_curve_div_by_contour, 'ro'); 
+plot (Distanceright, area_under_the_curve_div_by_contour, 'ro'); 
 xlim([0 max_distance+1]); % max limit is fixed by the max of maximal distance of TCJleft and TCJright
 set(gca, 'XDir', 'reverse');
-xlabel('Distance [\mum]', 'FontSize', 18);  ylabel({'Filopodia index'; '(area under the curve) [a.u]'}, 'FontSize', 18);
-title({'Filopodia index'; '(total no. of filpodia estimated from area under the curve)'}, 'FontSize', 18);
+xlabel('Distance [\mum]', 'FontSize', 18);  ylabel({'Cumulative filopodia index'; '(area under the curve) [a.u]'}, 'FontSize', 18);
+legend({'Distance from cell tip to left TCJ','Distance from cell tip to right TCJ'},'FontSize',18,'TextColor','black')
+title({'Filopodia index'; '(total no. of filopodia estimated from area under the curve)'}, 'FontSize', 12);
 saveas(gca, fullfile(folder_save,'Filopodia_index_(area_under_the_curve)'), 'fig'); 
+
+% 2D plot of filopodia index against the distance between the cell tip and top
+figure(11);
+plot(celltip_top_distance, area_under_the_curve_div_by_contour, 'ko');
+set(gca, 'XDir', 'reverse');
+xlabel('Distance (cell tip - line connecting TCJs) [\mum]', 'FontSize', 18);  ylabel({'Cumulative filopodia index'; '(area under the curve) [a.u]'}, 'FontSize', 18);
+title('Filopodia index against the distance to top (line connecting the TCJs)', 'FontSize', 12);
+saveas(gca, fullfile(folder_save,'Filopodia_index_vs_distance_to_top'), 'fig');
+
+% 2D plot of filopodia index against time
+figure(12);
+plot(Time, area_under_the_curve_div_by_contour, 'ko-');
+xlabel('Time [min]', 'FontSize', 18);  ylabel({'Cumulative filopodia index'; '(area under the curve) [a.u]'}, 'FontSize', 18);
+title('Filopodia index against time)', 'FontSize', 12);
+saveas(gca, fullfile(folder_save,'Filopodia_index_vs_Time'), 'fig');
+
+% 2D plot of left and right filopodia index against time
+figure(13);
+% sum of area under the curve is normalised by the corresponding contour length in order to avoid bias based on contour length; int this case the contour length
+% is half of contour length since only half of the contour is taken.
+contour_length_half = contour_length/2;
+area_under_the_curve_left = area_under_the_curve_left ./ contour_length_half;
+area_under_the_curve_right = area_under_the_curve_right ./ contour_length_half;
+plot (Time, area_under_the_curve_left, 'bo-');
+hold on
+plot (Time, area_under_the_curve_right, 'ro-');
+xlabel('Time [min]', 'FontSize', 18);  ylabel({'Filopodia index'; '(area under the curve) [a.u]'}, 'FontSize', 18);
+legend({'Left filopodia index','Right filopodia index'},'FontSize',18,'TextColor','black')
+title({'Filopodia index left and right'; '(total no. of filopodia estimated from area under the curve)'}, 'FontSize', 12);
+saveas(gca, fullfile(folder_save,'Filopodia_index_(area_under_the_curve)_left_&_right'), 'fig');
+
+% 2D plot of Ratio of filopodia index and Ratio of distances between left/right TCJ against time
+figure(14);
+% getting the ratio of left to right filopodia indices. 
+% Since some of the left and right filopodia index values are zero, some arrangement needs to be done. In general, if right (denominator) is zero or a very small value,
+% then the ratio is infinity or very high, respectively. And if left (numerator) is zero then the ratio is zero. Therefore here, we make an arrangement such that if the right (denominator) is 
+% zero or smaller than "1", then it is replaced with "1". In this case, instead of infinity or a very high value, the value of numerator will be the value of ratio. 
+% On the other hand, if the left (numerator) is zero, we leave it as zero so that the value of ratio becomes zero.
+area_under_the_curve_right(area_under_the_curve_right < 1) = 1; % changing all values below "1" to "one"
+ratio_filopodia_index = area_under_the_curve_left ./ area_under_the_curve_right;
+yyaxis left
+plot(Time, ratio_filopodia_index, 'bo-');
+yyaxis right
+plot(Time, ratio_TCJ_distance, 'ro-');
+xlabel('Time [min]', 'FontSize', 18);
+yyaxis left; ylabel('Filopodia index ratio (left/right) [a.u]', 'FontSize', 18);
+yyaxis right; ylabel('Ratio of left/right TCJ distances [a.u]) ', 'FontSize', 18);
+title('Filopodia index ratio and left/right TCJ distance ratio against time', 'FontSize', 12);
+saveas(gca, fullfile(folder_save,'Filopodia_index_ratio_&_TCJ_distance_ratio_vs_time'), 'fig');
+
+% 2D plot of filopodia index against the ratio of distances between the cell tip and left/right TCJs
+figure(15);
+plot(celltip_top_distance, ratio_filopodia_index, 'ko');
+xlabel('Distance (cell tip - line connecting TCJs) [\mum]', 'FontSize', 18);  ylabel('Filopodia index ratio (left/right) [a.u]', 'FontSize', 18);
+set(gca, 'XDir', 'reverse');
+title('Filopodia index ratio against the distance to top (line connecting the TCJs)', 'FontSize', 12);
+saveas(gca, fullfile(folder_save,'Filopodia_index_ratio_vs_distance_to_top'), 'fig');
+
+% saving full workspace
+save('all_TCJ_contents');
+
 
 %---------------------------------------------------------%---------------------------------------------------------------------%---------------------------------------------------------------------
 

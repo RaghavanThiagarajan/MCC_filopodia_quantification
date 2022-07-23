@@ -1,13 +1,19 @@
 %---------------------------------------------------------%
 
 % Raghavan Thiagarajan, DanStem, Copenhagen, 24th November 2020.
+% Modified for clone data on 24th March, 2021 - and some indexing issues
+% were fixed.
 
 % This script is used for reorganising the Tissue Analyser (TA) data. After extracting the "cell data" and "bond_data" from the TA,
 % using these two data sheets are inputs, this script: (1) obtains the two adjacent cells corresponding to each bond; (2) gets their
 % intensities; (3) normalises the bond intensity by the average of the adjacent cell intensities; (4) Then it places the bond intensities
 % against the corresponding cell in the same format as in the "local_id_of_bonds" column in the "cell_data" sheet obtained from the TA.
 % This script was mainly written to generate such a .csv file so that theorists working on Guilherme's project can use these
-% intensities to map the forces in the tissue.
+% intensities to map the forces in the tissue. 
+% Regarding points (1),(2) and (3): if both the cells on either side of the bond are identified, then intensity is calculated as described above. If only one cell
+% from one side of the bond is identified, then the intensity of only this cell (instead of the average of the intensities of the cells on either sides) is used
+% to normalise the bond intensity - for example, this can happen while analysing the clone data. In clones, bonds at the edge of the clones will
+% have only one cell and not the other cell since it is not included in the cell.
 
 clear all
 clc
@@ -106,28 +112,53 @@ while increment ~= cellrow
                     continue
                 end
                 
-                bond_size = bond_data.bond_size_in_px(bond_id_idx); % bond size
-                bond_int = bond_data.sum_px_int_vertices_excluded_12bits(bond_id_idx); % total intensity of the bond
+                % getting bond details
+                bond_size_list = bond_data.bond_size_in_px(bond_row_1:bond_row_last,1); % getting the bond size list for the corresponding time point.
+                bond_size = bond_size_list(bond_id_idx); % bond size
+                bond_int_list = bond_data.sum_px_int_vertices_excluded_12bits(bond_row_1:bond_row_last,1); % getting the total intensity list for the corresponding time point.
+                bond_int = bond_int_list(bond_id_idx); % total intensity of the bond
                 bond_int_mean = bond_int / bond_size; % mean intesnity of the bond
                 
-                cell_1_id = bond_data.cell_id_around_bond1(bond_id_idx); % getting the first adjacent cell
+                % getting cell 1 details
+                cell_1_id_list = bond_data.cell_id_around_bond1(bond_row_1:bond_row_last,1); % getting the first adjacent cell list for the corresponding time point.
+                cell_1_id = cell_1_id_list(bond_id_idx); % getting the first adjacent cell
                 % the following line is to be used only if the input of the "cell numbers" are in cell array format
-                cell_1_id = cell2mat(cell_1_id); cell_1_id = str2double(cell_1_id); 
+                %cell_1_id = cell2mat(cell_1_id); cell_1_id = str2double(cell_1_id); 
                 cell_1_idx = find(cell_data.local_id_cells(cellrow_1:cellrow_last,1) == cell_1_id); % getting the index of that cell
-                cell_1_area = cell_data.area_cells(cell_1_idx); % cell area
-                cell_1_int = cell_data.sum_px_intensity_cells_12_bits(cell_1_idx); % total intensity of the cell
+                cell_1_area_list = cell_data.area_cells(cellrow_1:cellrow_last,1); % getting the cell area list for the corresponding time point.
+                cell_1_area = cell_1_area_list(cell_1_idx); % cell area
+                
+                cell_1_int_list = cell_data.sum_px_intensity_cells_12_bits(cellrow_1:cellrow_last,1); % getting the total intensity list for the corresponding time point.
+                cell_1_int = cell_1_int_list(cell_1_idx); % total intensity of the cell
                 cell_1_int_mean = cell_1_int / cell_1_area; % mean intensity of first cell
-                
-                
-                cell_2_id = bond_data.cell_id_around_bond2(bond_id_idx); % getting the second adjacent cell
+                                
+                % getting cell 2 details
+                cell_2_id_list = bond_data.cell_id_around_bond2(bond_row_1:bond_row_last,1); % getting the second adjacent cell list for the corresponding time point.
+                cell_2_id = cell_2_id_list(bond_id_idx); % getting the second adjacent cell
                 % the following line is to be used only if the input of the "cell numbers" are in cell array format
-                cell_2_id = cell2mat(cell_2_id); cell_2_id = str2double(cell_2_id);
+                %cell_2_id = cell2mat(cell_2_id); cell_2_id = str2double(cell_2_id);
                 cell_2_idx = find(cell_data.local_id_cells(cellrow_1:cellrow_last,1) == cell_2_id); % getting the index of that cell
-                cell_2_area = cell_data.area_cells(cell_2_idx); % cell area
-                cell_2_int = cell_data.sum_px_intensity_cells_12_bits(cell_2_idx); % total intensity of the cell
+                cell_2_area_list = cell_data.area_cells(cellrow_1:cellrow_last,1); % getting the cell area list for the corresponding time point.
+                cell_2_area = cell_2_area_list(cell_2_idx); % cell area
+                
+                cell_2_int_list = cell_data.sum_px_intensity_cells_12_bits(cellrow_1:cellrow_last,1); % getting the total intensity of the cell list for the corresponding time point.
+                cell_2_int =cell_2_int_list(cell_2_idx); % total intensity of the cell
                 cell_2_int_mean = cell_2_int / cell_2_area; % mean intensity of second cell
                 
                 % normalising the bond intensity with the average of the two neighboring cell intensities.
+                
+                % the if loop below will be used only if there is a bond with one cell and not two cells on 
+                % either sides (this will happen while analysing clones - look at the description at the start 
+                % of this script). In this case, the intensity of the this cell is taken to be the intensity of 
+                % the other cell. In other words, we take just the intensity of one cell.
+                
+                if isempty(cell_1_int_mean) 
+                    cell_1_int_mean = cell_2_int_mean;
+                end
+                if isempty(cell_2_int_mean)
+                    cell_2_int_mean = cell_1_int_mean;
+                end 
+                                
                 bond_int_norm(bondnos_for_array_generation,1) = bond_int_mean / ((cell_1_int_mean + cell_2_int_mean)/2);
                 bond_id_array(bondnos_for_array_generation,1) = bond_id;
                 
@@ -140,12 +171,54 @@ while increment ~= cellrow
                 bond_id_array_conv_2 = split(bond_id_array_conv_1);
                 bond_id_for_writing = join(bond_id_array_conv_2,"#");
                 
+%                 % CHECK point statement-------------------
+%                 % creating the bond index
+%                 bond_id_idx_test(bondnos_for_array_generation,1) = bond_id_idx;
+%                 bond_id_idx_test_1 = num2str(bond_id_idx_test');
+%                 bond_id_idx_test_2 = split(bond_id_idx_test_1);
+%                 bond_id_idx_test_3 = join(bond_id_idx_test_2,"#");
+%                 
+%                 % creating the cell 1 area
+%                 cell_1_area_test(bondnos_for_array_generation,1) = cell_1_area;
+%                 cell_1_area_test_1 = num2str(cell_1_area_test');
+%                 cell_1_area_test_2 = split(cell_1_area_test_1);
+%                 cell_1_area_test_3 = join(cell_1_area_test_2,"#");
+%                 
+%                 % creating the cell 2 area
+%                 cell_2_area_test(bondnos_for_array_generation,1) = cell_2_area;
+%                 cell_2_area_test_1 = num2str(cell_2_area_test');
+%                 cell_2_area_test_2 = split(cell_2_area_test_1);
+%                 cell_2_area_test_3 = join(cell_2_area_test_2,"#");
+%                 
+%                 % creating the bond size
+%                 bond_size_test(bondnos_for_array_generation,1) = bond_size;
+%                 bond_size_test_1 = num2str(bond_size_test');
+%                 bond_size_test_2 = split(bond_size_test_1);
+%                 bond_size_test_3 = join(bond_size_test_2,"#");
+%                 
+%                 % CHECK point statement-------------------
+                
+                
+                
             end
             % the following arrays are cleared just to avoid errors.
-            clear bond_int_norm; clear bond_id_array;
+             
+            clear bond_int_norm; clear bond_id_array; 
+            
+%             % CHECK point statement-------------------
+%             clear bond_id_idx_test; clear bond_size_test; clear cell_1_area_test; clear cell_2_area_test;
+%             % CHECK point statement-------------------
+            
             % here we write the bond id and the bond intensities into the new columns
             cell_data.local_id_of_bonds_new(single_timepoint) = bond_id_for_writing;
-            cell_data.local_int_of_bonds_new(single_timepoint) = bond_int_for_writing;         
+            cell_data.local_int_of_bonds_new(single_timepoint) = bond_int_for_writing;  
+            
+%             % CHECK point statement-------------------
+%             cell_data.bond_indices_test(single_timepoint) = bond_id_idx_test_3;
+%             cell_data.cell_1_area_test(single_timepoint) = cell_1_area_test_3;
+%             cell_data.cell_2_area_test(single_timepoint) = cell_2_area_test_3;
+%             cell_data.bond_size_test(single_timepoint) = bond_size_test_3;
+%             % CHECK point statement-------------------           
             
         else
             % whenever the bond_ids of the border cells and border plus one cells are omitted, we put a zero to indicate that these cells
@@ -164,7 +237,5 @@ end
 writetable(cell_data,'cell_data_modified.csv');
 clear all;
 disp('Finished !');
-
-
 
 

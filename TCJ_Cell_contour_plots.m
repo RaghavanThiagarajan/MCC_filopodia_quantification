@@ -1,9 +1,11 @@
-% Raghavan Thiagarajan, DanStem, Copenhagen, 30th September 2018 - Version-03, 10th September 2020
+% Raghavan Thiagarajan, DanStem, Copenhagen, 30th September 2018 - Version-04, 10th September 2020
 
 % This script obtains different kinds of data and plots them in 2D and 3D.
 % The data obtained are: (1) Coordinates from the track file of Tri-cellular junctions; (2) The
 % ROI coordinates of cell surface contour; (3) Image dimensions and the
 % corresponding (4) Time points (5) Shifted ROI coordinates and their mean intensity.
+
+% In version 04, very small changes were made.
 
 % In version 03, following updates were done: (1) The filopodia index that cumulative across the cell was split into left and right filopodia index
 % and this was plotted against time and distance between the cell tip and left and right TCJs respectively; (2) In addition to getting the distance
@@ -582,6 +584,10 @@ saveas(gca, fullfile(folder_save,'Filopodia_index_ratio_vs_distance_to_top'), 'f
 
 % saving full workspace
 save('all_TCJ_contents');
+
+close all;
+
+disp ('Finished !')
 
 
 %---------------------------------------------------------%---------------------------------------------------------------------%---------------------------------------------------------------------

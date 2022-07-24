@@ -2,7 +2,7 @@
 
 This analysis pipeline is part of the paper _“Multiciliated cells use filopodia to probe tissue mechanics during epithelial integration in vivo”_ by Ventura & Amiri et al., XXX., XXX.
 
-The pipeline is used to quantify the filopodia interaction with tricellular junctions (TCJ) during the radial intercalation of multiciliated cells (MCC) in _Xenopus_ embryonic epithelia. Below, the steps for practical execution of the pipeline are outliined. For the related context, see the ***Materials and Methods*** section of the paper mentioned above.
+The pipeline is used to quantify the filopodia interaction with tricellular junctions (TCJ) during the radial intercalation of multiciliated cells (MCC) in _Xenopus_ embryonic epithelia. Below, the steps for practical execution of the pipeline are outliined. For the related context, see the ***Results*** and ***Materials and Methods*** section of the paper mentioned above.
 
 ***
 

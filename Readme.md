@@ -11,10 +11,14 @@ The pipeline is used to quantify the filopodia interaction with tricellular junc
 2. Extracting the region of interests (ROIs) and intensities of cortex and filopodia.
 3. Plotting.
 
+The total run time of the pipeline depends on the size of the image stack. For a image stack of ~ 200 frames, it will take about 5 minutes on a normal desktop computer. 
+
 
 ### **Softwares required:**
 * [Fiji](https://imagej.net/software/fiji/downloads)
-* MATLAB (preferrably 2017b) (https://se.mathworks.com/products/get-matlab.html?s_tid=gn_getml)
+* MATLAB (preferred & tested in 2017b) (https://se.mathworks.com/products/get-matlab.html?s_tid=gn_getml)
+
+Both Fiji and Matlab are standalone softwares that can be downloaded for all OS versions. This pipeline has been tested in MacOS Monterey and Windows 10. No specific hardware is required to run this pipeline.
 ***
 
 ## **Analysis steps:**
